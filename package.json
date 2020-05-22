@@ -1,0 +1,23 @@
+{
+  "name": "gallery-icc",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/consultnn/gallery.git"
+  },
+  "keywords": [
+    "gallery"
+  ],
+  "author": "Andranium",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/consultnn/gallery/issues"
+  },
+  "homepage": "https://github.com/consultnn/gallery#readme",
+  "dependencies": {}
+}

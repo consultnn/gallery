@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>gallery</title>
+
+    <style>
+        :root {
+            --controls: linear-gradient(180deg, #00A6E4 0%, #0089C0 100%);
+            --spinner-active-color: #00A6E4;
+            --spinner-disabled-color: #D9D9D9;
+            --preloader-bg-color: #f7f7f7;
+            --preloader-bg-color-fullscreen: #606060;
+        }
+
+        .slider {
+            user-select: none;
+        }
+        .slider:not(:last-child) {
+            margin-bottom: 24px;
+        }
+        .slider__container {
+            height: 420px;
+            position: relative;
+        }
+        @media (max-width: 578px) {
+            .slider__container {
+                height: 200px;
+            }
+        }
+        .slider__controls {
+            position: absolute;
+            height: 30px;
+            width: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            background-image: var(--controls);
+            top: 50%;
+            transform: translateY(-50%);
+            border-radius: 2px;
+            z-index: 1;
+            user-select: none;
+            transition: transform 0.2s ease;
+            will-change: transform;
+        }
+        @media (max-width: 578px) {
+            .slider__controls {
+                height: 40px;
+                width: 40px;
+            }
+        }
+        .slider__controls:active {
+            transform: translateY(-50%) scale(0.9);
+        }
+        .slider__controls--hidden {
+            display: none;
+        }
+        .slider__controls--next {
+            right: 0;
+        }
+        .slider__controls--next img {
+            transform: rotate(180deg);
+        }
+        .slider__fullscreen {
+            position: absolute;
+            z-index: 1;
+            top: 20px;
+            right: 20px;
+            cursor: pointer;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s ease, visibility 0.2s ease;
+            will-change: opacity, visibility;
+        }
+        .slider__fullscreen-close {
+            position: absolute;
+            right: 0;
+            top: -30px;
+            display: none;
+            cursor: pointer;
+        }
+        .slider:hover:not(.slider--fullscreen) .slider__fullscreen {
+            opacity: 1;
+            visibility: visible;
+        }
+        .slider--fullscreen {
+            position: fixed;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            height: 100%;
+            width: 100%;
+            top: 0;
+            left: 0;
+            background-color: rgba(51, 51, 51, .9);
+            z-index: 7777;
+        }
+        .slider--fullscreen .slider__controls {
+            height: 50px;
+            width: 50px;
+        }
+        .slider--fullscreen .slider__container {
+            width: 70%;
+            height: 750px;
+        }
+        @media (max-width: 578px) {
+            .slider--fullscreen .slider__container {
+                width: unset;
+                height: unset;
+                max-width: 300px;
+                max-height: 500px;
+            }
+        }
+        .slider--fullscreen .slider__footer {
+            background-color: #fff;
+            padding: 10px 20px;
+            border-radius: 45px;
+            margin-top: 10px;
+        }
+        .slider--fullscreen .slider__fullscreen-close {
+            display: block;
+        }
+        .slider--fullscreen .slider__image-wrapper {
+            cursor: auto;
+        }
+        .slider--fullscreen .slider__image-wrapper .slider__preloader {
+            background-color: var(--preloader-bg-color-fullscreen);
+        }
+        @media (max-width: 578px) {
+            .slider--fullscreen .slider__image-wrapper img {
+                max-width: 300px;
+                max-height: 500px;
+                object-fit: scale-down;
+            }
+        }
+        .slider__wrapper {
+            display: flex;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: rgba(248, 248, 248, .2);
+            position: relative;
+        }
+        .slider__wrapper > * {
+            flex-shrink: 0;
+        }
+        .slider__image-wrapper {
+            transition: transform 0.2s ease, opacity 0.2s ease, visibility 0.2s ease;
+            display: flex;
+            align-self: center;
+            justify-content: center;
+            flex-shrink: 0;
+            width: 100%;
+            cursor: zoom-in;
+            position: relative;
+            will-change: transform, opacity, visibility;
+        }
+        .slider__image-wrapper .slider__preloader {
+            position: absolute;
+            height: 100%;
+            width: 100%;
+            background-color: var(--preloader-bg-color);
+            transition: opacity 0.2s ease, visibility 0.2s ease;
+            opacity: 0;
+            visibility: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            will-change: opacity, visibility;
+        }
+        .slider__image-wrapper .slider__preloader .spinner {
+            height: 50px;
+            width: 50px;
+            border-radius: 50%;
+            border: 5px solid var(--spinner-disabled-color);
+            border-top-color: var(--spinner-active-color);
+            animation: spin 1.5s linear infinite;
+            will-change: transform;
+        }
+        .slider__image-wrapper--lazy img {
+            opacity: 0;
+            visibility: hidden;
+        }
+        .slider__image-wrapper--lazy .slider__preloader {
+            opacity: 1;
+            visibility: visible;
+        }
+        .slider__image-wrapper img {
+            transition: opacity 0.2s ease, visibility 0.2s ease;
+            object-fit: scale-down;
+            max-width: 100%;
+        }
+        .slider__footer {
+            display: flex;
+            align-items: center;
+            margin-top: 5px;
+        }
+        .slider__counter {
+            font-weight: bold;
+            font-size: 16px;
+            color: black;
+        }
+        .slider__caption {
+            margin-left: 12px;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+
+    </style>
+</head>
+<body>
+<div class="wrapper" style="width: 600px">
+    <div class="slider" data-key="0">
+        <div class="slider__container">
+            <div class="slider__fullscreen-close">
+                <img src="../src/images/close_fullscreen.svg">
+            </div>
+
+            <div class="slider__controls slider__controls--hidden slider__controls--prev">
+                <img src="../src/images/chevron.png">
+            </div>
+            <div class="slider__wrapper">
+                <div class="slider__image-wrapper slider__image-wrapper--lazy">
+                    <img src="" data-src="https://wallpaperset.com/w/full/b/f/9/201833.jpg" data-src-fs="https://wallpaperset.com/w/full/b/f/9/201833.jpg">
+
+                    <div class="slider__preloader">
+                        <div class="spinner"></div>
+                    </div>
+                </div>
+
+                <div class="slider__image-wrapper slider__image-wrapper--lazy">
+                    <img src="" data-src="https://wallpaperset.com/w/full/9/d/f/201937.jpg" data-src-fs="https://wallpaperset.com/w/full/9/d/f/201937.jpg">
+
+                    <div class="slider__preloader">
+                        <div class="spinner"></div>
+                    </div>
+                </div>
+
+                <div class="slider__image-wrapper slider__image-wrapper--lazy">
+                    <img src="" data-src="https://wallpaperset.com/w/full/8/6/1/201948.jpg" data-src-fs="https://wallpaperset.com/w/full/8/6/1/201948.jpg">
+
+                    <div class="slider__preloader">
+                        <div class="spinner"></div>
+                    </div>
+                </div>
+
+                <div class="slider__image-wrapper slider__image-wrapper--lazy">
+                    <img src="" data-src="https://wallpaperset.com/w/full/1/d/7/55431.jpg" data-src-fs="https://wallpaperset.com/w/full/1/d/7/55431.jpg">
+
+                    <div class="slider__preloader">
+                        <div class="spinner"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="slider__controls slider__controls--next">
+                <img src="../src/images/chevron.png">
+            </div>
+        </div>
+        <div class="slider__footer">
+            <div class="slider__counter">
+                <span class="current-index">1</span> / <span class="image-quantity">4</span>
+            </div>
+
+            <div class="slider__caption">Фото: banknn.ru</div>
+        </div>
+    </div>
+</div>
+<script>
+    class Slider {
+        constructor(slider) {
+            this.slider = slider;
+
+            this.controls = {
+                prev: this.slider.querySelector('.slider__controls--prev'),
+                next: this.slider.querySelector('.slider__controls--next'),
+                fullscreenClose: this.slider.querySelector('.slider__fullscreen-close')
+            }
+
+            this.wrapper = this.slider.querySelector('.slider__wrapper');
+
+            this.images = this.wrapper.querySelectorAll('img');
+
+            this.currentIndexBox = this.slider.querySelector('.current-index');
+            this.imageQuantityBox = this.slider.querySelector('.image-quantity');
+
+            this.currentIndex = 0;
+            this.imageQuantity = this.wrapper.children.length;
+
+            this.isFullscreen = false;
+
+            this.observer();
+
+            this.sliderInit();
+        }
+
+        observer() {
+            const imageWrappers = this.slider.querySelectorAll('.slider__image-wrapper');
+
+            imageWrappers.forEach(wrapper => {
+                wrapper.classList.add('slider__image-wrapper--lazy');
+            });
+
+            const options = {
+                root: this.wrapper,
+                rootMargin: '0px',
+                threshold: .1
+            }
+
+            const callback = (entries, observer) => {
+                let [ entry ] = entries;
+                let { target } = entry;
+
+                if(entry.isIntersecting) {
+                    const src = target.dataset[this.isFullscreen ? 'srcFs' : 'src'];
+                    target.src = src;
+
+                    target.addEventListener('load', e => {
+                        setTimeout(() => {
+                            target.parentElement.classList.remove('slider__image-wrapper--lazy');
+                        }, 500)
+                    })
+
+                    observer.unobserve(target);
+                }
+            }
+
+            const observer = new IntersectionObserver(callback, options);
+
+            this.images.forEach(image => {
+                observer.observe(image);
+            });
+        }
+
+        sliderInit() {
+            this.imageQuantityBox.innerText = this.imageQuantity;
+
+            this.controls.next.addEventListener('click', this.moveSlider.bind(this, 'next'));
+            this.controls.prev.addEventListener('click', this.moveSlider.bind(this, 'prev'));
+
+            this.controls.fullscreenClose.addEventListener('click', this.toggleFullscreen.bind(this, 'close'));
+
+            document.addEventListener('click', e => {
+                let { target } = e;
+
+                if(!(target.dataset.key && this.isFullscreen)) return;
+                this.toggleFullscreen('close');
+            });
+
+            this.wrapper.addEventListener('click', e => {
+                if(this.isFullscreen) return;
+
+                this.toggleFullscreen('open');
+            });
+
+            this.swipeActions();
+
+            this.keyControls();
+        }
+
+        moveSlider(direction) {
+            let sliderItems = [...this.wrapper.children];
+            let condition = null;
+
+            direction === 'prev' ? this.currentIndex -= 1 : this.currentIndex += 1
+
+            this.controllersHandler();
+            this.currentIndexIndicator();
+
+            condition = direction === 'prev' ? this.currentIndex < 0 : this.currentIndex >= this.imageQuantity < 0;
+
+            if(condition) {
+                return;
+            }
+
+            sliderItems.forEach(item => {
+                item.style.transform = `translateX(-${this.currentIndex}00%)`;
+            });
+        }
+
+        controllersHandler() {
+            let target = this.slider.querySelector('.slider__controls--hidden');
+
+            if(target) target.classList.remove('slider__controls--hidden');
+
+            if(this.currentIndex === 0) this.controls.prev.classList.add('slider__controls--hidden');
+
+            if(this.currentIndex === this.imageQuantity - 1) this.controls.next.classList.add('slider__controls--hidden');
+        }
+
+        currentIndexIndicator() {
+            this.currentIndexBox.innerText = this.currentIndex + 1;
+        }
+
+        toggleFullscreen(action = 'open') {
+            this.slider.classList[action === 'open' ? 'add' : 'remove']('slider--fullscreen');
+            this.observer();
+            this.isFullscreen = action === 'open';
+            this.adaptiveImage();
+        }
+
+        adaptiveImage() {
+            const currentImage = this.images[this.currentIndex];
+            currentImage.src = currentImage.dataset[this.isFullscreen ? 'srcFs' : 'src'];
+
+            currentImage.addEventListener('load', e => {
+                currentImage.parentElement.classList.remove('slider__image-wrapper--lazy');
+            });
+        }
+
+        swipeActions() {
+            let position = {
+                startPos: null,
+                endPos: null
+            }
+
+            this.wrapper.addEventListener('touchstart', setPosition.bind(null, 'startPos'));
+
+            this.wrapper.addEventListener('touchmove', setPosition.bind(null, 'endPos'));
+
+            this.wrapper.addEventListener('touchend', e => {
+                const { startPos } = position;
+                const { endPos } = position;
+
+                let direction = null;
+
+                direction = (endPos - startPos) > 0 ? 'prev' : 'next';
+
+                if(this.currentIndex === 0 && direction === 'prev') return;
+
+                if(this.currentIndex === this.imageQuantity - 1 && direction === 'next') return;
+
+                this.moveSlider(direction);
+            });
+
+            function setPosition(checkpoint, e) {
+                const [touch] = e.touches;
+                position[checkpoint] = touch.clientX;
+            }
+        }
+
+        keyControls() {
+            document.addEventListener('keydown', e => {
+                if(!this.isFullscreen) return;
+
+                const { keyCode } = e;
+
+                const ARROW_RIGHT = 39;
+                const ARROW_LEFT = 37;
+                const ESC = 27;
+
+
+                if(keyCode === ARROW_RIGHT) {
+                    if(this.currentIndex === this.imageQuantity - 1) return;
+
+                    this.moveSlider('next');
+                }
+
+                if(keyCode === ARROW_LEFT) {
+                    if(this.currentIndex === 0) return;
+
+                    this.moveSlider('prev');
+                }
+
+                if(keyCode === ESC) {
+                    this.toggleFullscreen('close');
+                }
+            })
+        }
+
+        static init(slider) {
+            let key = slider.dataset.key;
+
+            if(!(key in Slider._instances)) {
+                Slider._instances[key] = new Slider(slider);
+            }
+
+            return Slider._instances[key]
+        }
+    }
+
+    Slider._instances = {};
+
+    let sliders = document.querySelectorAll('.slider');
+
+    sliders.forEach(slider => {
+        Slider.init(slider);
+    });
+</script>
+</body>
+</html>
